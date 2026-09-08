@@ -23,7 +23,9 @@ public readonly record struct ResourceIdentity(
     ResourceKey Key);
 ```
 
-The Integration owns construction and canonicalization of `ResourceKey` according to its domain identity/scoping semantics.
+Each `ResourceIdentity` component is a structural contract value. `IntegrationId`, `ResourceType`, and `ResourceKey` SHALL each be non-null, non-empty, and non-whitespace. These requirements are infrastructure-independent structural invariants and MAY be enforced by the public value types themselves.
+
+Integration-specific naming, formatting, scoping, and canonicalization rules remain owned by the Integration. The Integration owns construction and canonicalization of `ResourceKey` according to its domain identity/scoping semantics.
 
 Engine SHALL NOT understand or manufacture cloud-specific scopes such as Azure resource groups/VNets/subscriptions, Kubernetes namespaces, GCP projects/zones, or other platform containers.
 
@@ -204,6 +206,8 @@ Exact APIs remain open.
 
 ## Guardrails
 
+- `IntegrationId`, `ResourceType`, and `ResourceKey` SHALL each be non-null, non-empty, and non-whitespace structural values.
+- Infrastructure-independent identity invariants MAY be enforced by the public value types; domain-specific naming, formatting, scoping, and canonicalization remain Integration responsibilities.
 - Adapter identity SHALL NOT participate in ResourceIdentity.
 - Target-specific addresses SHALL NOT participate in ResourceIdentity.
 - Lifecycle SHALL NOT participate in ResourceIdentity.
@@ -226,6 +230,7 @@ Exact APIs remain open.
 
 ### Positive
 
+- Invalid empty identity components are rejected at the public structural-contract boundary rather than propagating into graph construction.
 - Scoped duplicate names remain unambiguous without making Engine cloud-aware.
 - Existing and managed resources share one identity/reference model.
 - Typed references express semantic type rather than lifecycle implementation.
