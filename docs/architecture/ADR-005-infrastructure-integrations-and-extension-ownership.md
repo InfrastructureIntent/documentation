@@ -37,7 +37,14 @@ Target
   owns Backend conformance suite
 ```
 
-An Integration exposes at least stable Integration identity and implementation version, supported Engine contract generation information, a Semantic Model for its domain, a Domain Abstractions generation, one or more Backend implementations for explicitly supported Targets, and composition metadata.
+An Integration exposes at least:
+
+- stable Integration identity and implementation version;
+- supported Engine contract generation information;
+- a Semantic Model for its infrastructure domain;
+- a Domain Abstractions generation containing public typed resource contracts;
+- one or more Backend implementations for explicitly supported Targets;
+- compatibility metadata required for composition.
 
 An illustrative contract may resemble:
 
@@ -119,24 +126,45 @@ Potential Targets include Terraform, OpenTofu, Azure Bicep, Azure Resource Manag
 
 Each distinct deployment technology is modeled as its own Target. Shared syntax, ancestry, or implementation details do not imply a shared Target identity.
 
-Terraform and OpenTofu are therefore separate Targets. If an Integration supports both, it explicitly provides Backend support for both.
+Terraform and OpenTofu are therefore separate Targets. If an Integration supports both, it explicitly provides Backend support for both:
 
-A Target owns, as appropriate to that technology, a separately consumable Target Abstractions contract, Target model or Target IR, Target-specific types and expressions, Target validation, serialization/emission, one or more Emitters where useful, supported Target contract generations, and versioned Backend conformance suites.
+```text
+SddcFlex Integration
+    |
+    +-- SddcFlex -> Terraform Backend -> Terraform Target
+    |
+    +-- SddcFlex -> OpenTofu Backend  -> OpenTofu Target
+```
+
+Engine does not define a Terraform/OpenTofu Target family or compatibility profile merely to represent their overlap. Implementations remain free to share internal libraries and tests.
+
+A Target owns, as appropriate to that technology:
+
+- a separately consumable Target Abstractions contract;
+- a Target model or Target IR;
+- Target-specific types and expressions;
+- Target validation;
+- serialization and emission;
+- one or more Emitters where useful;
+- supported Target contract generations;
+- versioned Backend conformance suites.
 
 ## Backend compatibility
 
 A Backend is an Integration-owned mapping from one Integration's resolved typed domain resources into one specific Target contract.
 
 ```text
-SddcFlex.Abstractions -> Terraform Backend       -> Terraform.Target.Abstractions
-SddcFlex.Abstractions -> OpenTofu Backend        -> OpenTofu.Target.Abstractions
-GCP.Abstractions      -> Terraform Backend       -> Terraform.Target.Abstractions
-Azure.Abstractions    -> Bicep Backend           -> Bicep.Target.Abstractions
+SddcFlex.Abstractions -> Terraform Backend      -> Terraform.Target.Abstractions
+SddcFlex.Abstractions -> OpenTofu Backend       -> OpenTofu.Target.Abstractions
+GCP.Abstractions      -> Terraform Backend      -> Terraform.Target.Abstractions
+Azure.Abstractions    -> Bicep Backend          -> Bicep.Target.Abstractions
 ```
 
 A Backend SHALL compile against the published Target Abstractions generation it supports and SHALL NOT reference the concrete Target implementation.
 
 Compatibility is resolved from Target identity plus explicitly supported contract generation, not Target implementation-version ranges.
+
+A Backend supporting multiple Targets must independently support and conform to each distinct Target contract.
 
 ## Contract generations and lifecycle
 
@@ -155,6 +183,8 @@ Every published Target SHALL provide a versioned Backend conformance suite. Ever
 Every Domain Abstractions generation SHALL likewise have applicable conformance evidence for Integration implementations that claim to support it.
 
 A newer implementation claiming compatibility with an older generation SHALL run that older generation's suite. Compatibility is demonstrated rather than inferred from implementation version numbers.
+
+Passing Target conformance establishes compliance with the published Target contract. It does not prove every domain-specific mapping is correct; Integration authors remain responsible for their own semantic and mapping tests.
 
 ## Target independence and reuse
 
@@ -176,6 +206,27 @@ Contract generations and conformance prevent implementation-version churn from b
 
 The in-process .NET assembly model provides the simplest viable initial extensibility mechanism while leaving room for stronger isolation later if demonstrated requirements justify it.
 
+## Consequences
+
+### Positive
+
+- Infrastructure domains can evolve without requiring Engine Core releases.
+- Third parties can independently own and release Integrations.
+- Backends receive strongly typed domain inputs and Target outputs.
+- Targets can be reused by multiple infrastructure domains.
+- Compatibility is explicit, versioned, and executable through conformance tests.
+- Engine, Integration, and Target implementation releases can evolve independently behind supported contract generations.
+- New Targets do not create implicit support obligations for existing Integrations.
+
+### Negative / risks
+
+- Engine, Domain, and Target contracts become long-lived compatibility commitments.
+- Supporting multiple contract generations increases maintenance and testing cost.
+- In-process plugins create dependency-loading, assembly-isolation, and CLR type-identity challenges.
+- Integration authors supporting similar Targets may write multiple Backend adapters even when implementation can be shared internally.
+- Conformance tests cannot prove every domain mapping is semantically correct.
+- Some deployment technologies may not fit the same internal Target IR/Emitter architecture and must not be forced into one.
+
 ## Guardrails
 
 - Engine Core SHALL NOT contain infrastructure-domain-specific resource definitions or Target mappings.
@@ -191,6 +242,32 @@ The in-process .NET assembly model provides the simplest viable initial extensib
 - A new Target SHALL be introducible without changing existing Integrations that do not support it.
 - A new Integration SHALL be introducible without changing existing Targets or Engine Core when existing contracts are sufficient.
 
+## Alternatives considered
+
+### Engine owns all infrastructure domains
+
+Rejected because it couples Engine releases to every supported platform and prevents independent ownership.
+
+### Integration owns complete Target generation
+
+Rejected as the primary architecture because it duplicates common Target modeling, validation, and emission and gives Integration authors no stable shared Target contract.
+
+### Target owns domain mappings
+
+Rejected because the Target would accumulate knowledge of every infrastructure domain and become a second semantic-model layer.
+
+### Target families or compatibility profiles
+
+Not proposed. Similarity today does not guarantee compatible evolution tomorrow, and a profile/version abstraction adds complexity without demonstrated need.
+
+### External manifest-driven plugin system
+
+Not proposed initially. Assembly metadata and published .NET contracts are sufficient until a concrete requirement demonstrates otherwise.
+
+### Out-of-process extensions
+
+Not proposed initially. This adds substantial operational and compatibility complexity without a demonstrated requirement.
+
 ## Open questions
 
 - What is the exact `IInfrastructureIntegration` contract?
@@ -199,5 +276,5 @@ The in-process .NET assembly model provides the simplest viable initial extensib
 - How are plugin assemblies discovered and loaded?
 - How are plugin dependency conflicts and multiple contract generations isolated?
 - What is the minimum mandatory content of Engine, Domain, and Target conformance suites?
-- How should Targets that do not naturally use an IR-plus-Emitter architecture fit without weakening the core boundaries?
+- How should Targets that do not naturally use an IR-plus-Emitter architecture, potentially including Ansible, fit without weakening the core boundaries?
 - What trust or signing requirements are needed if third-party plugins are eventually distributed broadly?
