@@ -38,7 +38,14 @@ Given equivalent normalized inputs, semantic definitions, Engine version, backen
 
 The same compiler should be usable from multiple execution surfaces without changing compilation semantics.
 
-Potential surfaces include CLI, API, container, CI/CD pipeline task, local developer tooling, and scheduled or orchestrated jobs.
+Potential surfaces include:
+
+- CLI;
+- API;
+- container;
+- CI/CD pipeline task;
+- local developer tooling;
+- scheduled or orchestrated job.
 
 ### API and CLI parity
 
@@ -60,7 +67,19 @@ OCI artifacts are one possible future distribution mechanism but are not require
 
 ## Explicit non-decisions
 
-This ADR does **not** require Kubernetes, microservices, service mesh, operators, controllers, CRDs, event-driven architecture, remote plugin execution, a database, a particular public cloud, or OCI-based extension distribution.
+This ADR does **not** require:
+
+- Kubernetes;
+- microservices;
+- service mesh;
+- operators;
+- controllers;
+- CRDs;
+- event-driven architecture;
+- remote plugin execution;
+- a database;
+- a particular public cloud;
+- OCI-based extension distribution.
 
 These technologies may be introduced later when justified by concrete requirements.
 
